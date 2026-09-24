@@ -24,3 +24,14 @@ textarea{min-height:100px;resize:vertical}
 label{display:block;color:var(--cyan);font-weight:700;margin-top:8px}
 h3{color:var(--cyan);text-align:center;margin-top:24px}
 .notification-preview{border-color:var(--cyan);border-left-color:var(--plum-soft)}
+
+.simulation-banner{padding:12px;margin:12px 0;background:var(--cyan);color:var(--charcoal);border-radius:12px;text-align:center;font-weight:900}
+.answer-list{display:grid;gap:9px;margin:14px 0}
+.sim-answer{background:var(--panel);color:var(--text);border-color:var(--petrol);box-shadow:none}
+.answer-result{padding:15px;border-radius:12px;text-align:center;margin-top:14px}
+.answer-result.ok{background:#143d2b;border:2px solid #3bc477}
+.answer-result.bad{background:#4a2025;border:2px solid #ef5965}
+.answer-result.neutral{background:#3b4145;border:2px solid #8f989d}
+.fictitious{border-color:var(--cyan);border-left-color:var(--cyan);text-align:center}
+.check{display:flex;gap:10px;align-items:center}
+.check input{width:auto;margin:0}
