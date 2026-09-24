@@ -1,11 +1,11 @@
-/* BDL TEST PLATFORM — standalone; production is read-only. */
+(()=>{\n/* BDL TEST PLATFORM — standalone; production is read-only. */
 const PROD_URL="https://bdl-amy.github.io/Quiz-Me-This-BDL-Quiz-Me-That/";
 const API="https://ggmcjycwrnpahauhwyrs.supabase.co/functions/v1/test-results-service";
 const TEST_MENU=[["TEST PLAY","test-play"],["TEST MODE","test-mode"],["LIVE ANSWERS","live-answers"],["SYSTEM CHECK","system-check"],["QUESTIONS","questions"],["RESULTS","results"],["STATISTICS","statistics"],["HISTORY","history"],["WINNER CONTROL","winner-control"],["NOTIFICATIONS","notifications"]];
 const app=document.getElementById("app");
 const state={session:true,simulation:JSON.parse(sessionStorage.getItem("bdlTestSimulation")||"{}"),account:null,expiresAt:null};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const token=()=>new URLSearchParams(location.search).get("session")||sessionStorage.getItem("bdlTestSession")||"";
+const token=()=>window.__BDL_TEST_SESSION_TOKEN||new URLSearchParams(location.search).get("session")||sessionStorage.getItem("bdlTestSession")||"";
 async function api(action,extra={}){const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,session_token:token(),...extra})});const x=await r.json();if(!r.ok||!x.success)throw new Error(x.error||"request_failed");return x}
 function saveSim(){sessionStorage.setItem("bdlTestSimulation",JSON.stringify(state.simulation))}
 function shell(title,body){app.innerHTML='<h2>'+esc(title)+'</h2>'+body+'<button class="secondary" id="back">BACK TO TEST PLATFORM</button><button class="end" id="endSession">END TEST SESSION</button>';document.getElementById("back").onclick=renderHome;document.getElementById("endSession").onclick=endSession}
@@ -18,5 +18,6 @@ function testPlay(){const s=state.simulation||{};shell("TEST PLAY",'<div class="
 async function winners(){shell("WINNER CONTROL",'<div class="card"><p>Loading…</p></div>');try{const x=await api("winners");const w=(x.weekly||[]).slice(0,8);shell("WINNER CONTROL",'<div class="card"><p>Fictitious winner in TEST PLAY: <strong>'+esc((state.account||"test").toUpperCase())+'</strong></p><button id="releaseWinner">RELEASE / REMOVE FICTITIOUS WINNER</button></div>'+w.map(v=>'<div class="card"><p>'+esc(v.player_name||v.winner_name||"Winner")+'</p><p class="muted">'+esc(v.week_start||"")+'</p></div>').join(""));document.getElementById("releaseWinner").onclick=()=>{state.simulation.winner=!state.simulation.winner;saveSim();winners()}}catch(e){shell("WINNER CONTROL",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
 async function systemCheck(){try{await api("session");shell("SYSTEM CHECK",'<div class="card"><p>Session authorization: PASS</p><p>Read-only production access: PASS</p><p>Simulation isolation: PASS</p></div>')}catch{shell("SYSTEM CHECK",'<div class="card"><p>Session authorization: FAIL</p></div>')}}
 function renderSection(id){if(id==="live-answers")return liveAnswers();if(id==="questions")return questions();if(id==="test-mode")return testMode();if(id==="test-play")return testPlay();if(id==="winner-control")return winners();if(id==="system-check")return systemCheck();shell(TEST_MENU.find(x=>x[1]===id)?.[0]||id,'<div class="card"><p>This module is isolated from production and is next in the build sequence.</p></div>')}
-function endSession(){sessionStorage.removeItem("bdlTestSession");sessionStorage.removeItem("bdlTestSimulation");if(window.parent!==window){window.parent.postMessage({type:"BDL_TEST_PLATFORM_END"},"https://bdl-amy.github.io");return}location.href=PROD_URL}
+function endSession(){sessionStorage.removeItem("bdlTestSession");sessionStorage.removeItem("bdlTestSimulation");if(typeof window.BDL_END_TEST_PLATFORM==="function"){window.BDL_END_TEST_PLATFORM();return}if(window.parent!==window){window.parent.postMessage({type:"BDL_TEST_PLATFORM_END"},"https://bdl-amy.github.io");return}location.href=PROD_URL}
 init();
+\n})();
