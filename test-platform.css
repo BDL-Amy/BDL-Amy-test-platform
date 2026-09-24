@@ -35,3 +35,17 @@ h3{color:var(--cyan);text-align:center;margin-top:24px}
 .fictitious{border-color:var(--cyan);border-left-color:var(--cyan);text-align:center}
 .check{display:flex;gap:10px;align-items:center}
 .check input{width:auto;margin:0}
+
+.player-shell{background:#f4f4f4;color:#111;border-radius:18px;padding:16px;margin-top:14px}
+.player-shell h2,.player-shell h3{color:#111}
+.player-tabs{display:grid;gap:8px;margin:12px 0}
+.player-tabs button{background:#f4f4f4;color:#111;border:3px solid #111;box-shadow:none}
+.player-tabs button.active{background:#111;color:#fff}
+.player-question{background:#fff;border-radius:16px;padding:14px}
+.question-bar{background:#111;color:#fff;padding:12px;border-radius:10px;text-align:center;font-weight:900}
+.player-answer{background:#fff;color:#111;border:3px solid #111;box-shadow:none;margin-top:9px}
+.player-answer.selected{background:#ff6a00;color:#111;border-color:#ff6a00}
+.submit-answer{background:#ff6a00!important;color:#111!important;border-color:#ff6a00!important;margin-top:14px}
+.submit-answer:disabled{opacity:.45}
+.player-popup{background:#fff;color:#111;border:4px solid var(--cyan);border-radius:16px;padding:18px;margin:14px 0;text-align:center}
+.player-popup h2{color:#111}
