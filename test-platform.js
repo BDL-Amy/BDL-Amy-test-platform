@@ -17,7 +17,51 @@ function testMode(){const sim=state.simulation;const body='<div class="card"><p>
 function testPlay(){const s=state.simulation||{};shell("TEST PLAY",'<div class="card"><p><strong>Simulated screen:</strong> '+esc(s.screen||"Today")+'</p><p><strong>Fictitious winner:</strong> '+(s.winner?esc((state.account||"test").toUpperCase()):"Not released")+'</p><p class="muted">This presentation does not change production data.</p></div>')}
 async function winners(){shell("WINNER CONTROL",'<div class="card"><p>Loading…</p></div>');try{const x=await api("winners");const w=(x.weekly||[]).slice(0,8);shell("WINNER CONTROL",'<div class="card"><p>Fictitious winner in TEST PLAY: <strong>'+esc((state.account||"test").toUpperCase())+'</strong></p><button id="releaseWinner">RELEASE / REMOVE FICTITIOUS WINNER</button></div>'+w.map(v=>'<div class="card"><p>'+esc(v.player_name||v.winner_name||"Winner")+'</p><p class="muted">'+esc(v.week_start||"")+'</p></div>').join(""));document.getElementById("releaseWinner").onclick=()=>{state.simulation.winner=!state.simulation.winner;saveSim();winners()}}catch(e){shell("WINNER CONTROL",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
 async function systemCheck(){try{await api("session");shell("SYSTEM CHECK",'<div class="card"><p>Session authorization: PASS</p><p>Read-only production access: PASS</p><p>Simulation isolation: PASS</p></div>')}catch{shell("SYSTEM CHECK",'<div class="card"><p>Session authorization: FAIL</p></div>')}}
-function renderSection(id){if(id==="live-answers")return liveAnswers();if(id==="questions")return questions();if(id==="test-mode")return testMode();if(id==="test-play")return testPlay();if(id==="winner-control")return winners();if(id==="system-check")return systemCheck();shell(TEST_MENU.find(x=>x[1]===id)?.[0]||id,'<div class="card"><p>This module is isolated from production and is next in the build sequence.</p></div>')}
+
+async function snapshot(){return api("snapshot")}
+async function results(){
+ shell("RESULTS",'<div class="card"><p>Loading…</p></div>');
+ try{
+  const x=await snapshot(),rows=x.answers||[],played=rows.length,correct=rows.filter(r=>r.is_correct===true).length,wrong=rows.filter(r=>r.is_correct===false).length,pending=played-correct-wrong;
+  shell("RESULTS",'<div class="metric-grid"><div class="metric"><strong>'+played+'</strong><span>PLAYED</span></div><div class="metric"><strong>'+correct+'</strong><span>CORRECT</span></div><div class="metric"><strong>'+wrong+'</strong><span>INCORRECT</span></div><div class="metric"><strong>'+pending+'</strong><span>PENDING</span></div></div>');
+ }catch(e){shell("RESULTS",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}
+}
+async function statistics(){
+ shell("STATISTICS",'<div class="card"><p>Loading…</p></div>');
+ try{
+  const x=await snapshot(),rows=x.answers||[],by=new Map();
+  rows.forEach(r=>{const k=r.player_name||"Unknown",v=by.get(k)||{p:0,c:0};v.p++;if(r.is_correct===true)v.c++;by.set(k,v)});
+  const list=[...by].map(([n,v])=>({n,p:v.p,c:v.c,a:v.p?Math.round(v.c/v.p*100):0})).sort((a,b)=>b.c-a.c||b.p-a.p);
+  shell("STATISTICS",list.map((r,n)=>'<div class="card stat-row"><strong>'+(n+1)+'. '+esc(r.n)+'</strong><span>'+r.c+' correct · '+r.p+' played · '+r.a+'%</span></div>').join("")||'<div class="card"><p>No statistics available.</p></div>');
+ }catch(e){shell("STATISTICS",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}
+}
+async function historyView(){
+ shell("HISTORY",'<div class="card"><p>Loading…</p></div>');
+ try{
+  const x=await snapshot(),w=x.weekly||[],m=x.monthly||[];
+  const weekly=w.map(v=>'<div class="card"><strong>'+esc(v.player_name||v.winner_name||"Winner")+'</strong><p class="muted">'+esc(v.week_start||"")+'</p></div>').join("");
+  const monthly=m.map(v=>'<div class="card"><strong>'+esc(v.player_name||v.winner_name||"Winner")+'</strong><p class="muted">'+esc(v.month_start||"")+'</p></div>').join("");
+  shell("HISTORY",'<h3>WEEKLY WINNERS</h3>'+weekly+'<h3>MONTHLY WINNERS</h3>'+monthly);
+ }catch(e){shell("HISTORY",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}
+}
+function notifications(){
+ const n=state.simulation.notification||{title:"TEST NOTIFICATION",body:"This is a TEST PLATFORM preview."};
+ shell("NOTIFICATIONS",'<div class="card"><label>Title</label><input id="nTitle" value="'+esc(n.title)+'"><label>Message</label><textarea id="nBody">'+esc(n.body)+'</textarea><button id="previewN">PREVIEW NOTIFICATION</button></div><div class="card notification-preview"><strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p></div>');
+ document.getElementById("previewN").onclick=()=>{state.simulation.notification={title:document.getElementById("nTitle").value,body:document.getElementById("nBody").value};saveSim();notifications()};
+}
+function renderSection(id){
+ if(id==="live-answers")return liveAnswers();
+ if(id==="questions")return questions();
+ if(id==="test-mode")return testMode();
+ if(id==="test-play")return testPlay();
+ if(id==="winner-control")return winners();
+ if(id==="system-check")return systemCheck();
+ if(id==="results")return results();
+ if(id==="statistics")return statistics();
+ if(id==="history")return historyView();
+ if(id==="notifications")return notifications();
+ shell(TEST_MENU.find(x=>x[1]===id)?.[0]||id,'<div class="card"><p>Module unavailable.</p></div>');
+}
 function endSession(){sessionStorage.removeItem("bdlTestSession");sessionStorage.removeItem("bdlTestSimulation");if(typeof window.BDL_END_TEST_PLATFORM==="function"){window.BDL_END_TEST_PLATFORM();return}if(window.parent!==window){window.parent.postMessage({type:"BDL_TEST_PLATFORM_END"},"https://bdl-amy.github.io");return}location.href=PROD_URL}
 init();
 \n})();
