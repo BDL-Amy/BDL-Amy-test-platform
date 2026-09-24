@@ -13,8 +13,36 @@ async function init(){const u=new URL(location.href),t=u.searchParams.get("sessi
 function renderHome(){app.innerHTML='<h1>BDL TEST PLATFORM</h1><p><span class="badge">'+esc((state.account||"TEST").toUpperCase())+' · ACTIVE TEST SESSION</span></p><p class="muted">Real quiz data is read-only. Simulations stay inside this session.</p><div class="menu">'+TEST_MENU.map(([l,id])=>'<button data-open="'+id+'">'+l+'</button>').join("")+'</div><button class="end" id="endSession">END TEST SESSION</button>';app.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>renderSection(b.dataset.open));document.getElementById("endSession").onclick=endSession}
 async function liveAnswers(){shell("LIVE ANSWERS",'<div class="card"><p>Loading…</p></div>');try{const x=await api("results"),rows=x.results||[];shell("LIVE ANSWERS",'<div class="card"><p><strong>'+rows.length+'</strong> answers received</p></div>'+rows.map(v=>'<div class="card"><p><strong>Q'+esc(v.question_num)+'</strong> · '+esc(v.quiz_date)+'</p><p>'+esc(v.player_name)+' — '+esc(v.selected_answer)+'</p><p class="muted">'+(v.is_correct===true?"Correct":v.is_correct===false?"Incorrect":"Pending")+' · '+esc(new Date(v.created_at).toLocaleString())+'</p></div>').join(""))}catch(e){shell("LIVE ANSWERS",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
 async function questions(){shell("QUESTIONS",'<div class="card"><p>Loading…</p></div>');try{const x=await api("questions");shell("QUESTIONS",(x.questions||[]).map(q=>'<div class="card"><p><strong>Q'+esc(q.question_num)+'</strong> · '+esc(q.quiz_date)+'</p><p>'+esc(q.question)+'</p><p class="muted">Correct answer: '+esc(q.correct_answer||"—")+'</p></div>').join(""))}catch(e){shell("QUESTIONS",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
-function testMode(){const sim=state.simulation;const body='<div class="card"><p>Configure the isolated simulation.</p><label>Screen</label><select id="simScreen"><option>Today</option><option>Catch Up</option><option>Previous Question</option></select><p><label><input type="checkbox" id="simWinner"> Release fictitious winner</label></p><button id="saveSim">SAVE TEST MODE</button></div>';shell("TEST MODE",body);document.getElementById("simScreen").value=sim.screen||"Today";document.getElementById("simWinner").checked=!!sim.winner;document.getElementById("saveSim").onclick=()=>{state.simulation={screen:document.getElementById("simScreen").value,winner:document.getElementById("simWinner").checked};saveSim();testMode()}}
-function testPlay(){const s=state.simulation||{};shell("TEST PLAY",'<div class="card"><p><strong>Simulated screen:</strong> '+esc(s.screen||"Today")+'</p><p><strong>Fictitious winner:</strong> '+(s.winner?esc((state.account||"test").toUpperCase()):"Not released")+'</p><p class="muted">This presentation does not change production data.</p></div>')}
+function testMode(){
+ const sim=state.simulation||{};
+ const body='<div class="card"><p>Configure an isolated quiz simulation.</p><label>Screen</label><select id="simScreen"><option>Today</option><option>Catch Up</option><option>Previous Question</option></select><label>Question number</label><input id="simQuestion" inputmode="numeric" value="'+esc(sim.question_num||"")+'" placeholder="Use current question"><label>Simulated answer status</label><select id="simStatus"><option>Not played</option><option>Correct</option><option>Incorrect</option></select><p><label class="check"><input type="checkbox" id="simWinner"> Release fictitious winner</label></p><p><label class="check"><input type="checkbox" id="simNotify"> Show test notification</label></p><button id="saveSim">SAVE TEST MODE</button><button class="secondary" id="resetSim">RESET SIMULATION</button></div>';
+ shell("TEST MODE",body);
+ document.getElementById("simScreen").value=sim.screen||"Today";
+ document.getElementById("simStatus").value=sim.status||"Not played";
+ document.getElementById("simWinner").checked=!!sim.winner;
+ document.getElementById("simNotify").checked=!!sim.showNotification;
+ document.getElementById("saveSim").onclick=()=>{state.simulation={...state.simulation,screen:document.getElementById("simScreen").value,question_num:Number(document.getElementById("simQuestion").value)||null,status:document.getElementById("simStatus").value,winner:document.getElementById("simWinner").checked,showNotification:document.getElementById("simNotify").checked};saveSim();testMode()};
+ document.getElementById("resetSim").onclick=()=>{state.simulation={};saveSim();testMode()};
+}
+async function testPlay(){
+ shell("TEST PLAY",'<div class="card"><p>Loading simulation…</p></div>');
+ try{
+  const x=await snapshot(),s=state.simulation||{},qs=x.questions||[];
+  let q=s.question_num?qs.find(v=>Number(v.question_num)===Number(s.question_num)):null;
+  if(!q)q=qs[0]||null;
+  const screen=s.screen||"Today",status=s.status||"Not played";
+  let body='<div class="simulation-banner">SIMULATION · NO PRODUCTION DATA IS CHANGED</div>';
+  if(q){
+   body+='<div class="card"><p><strong>'+esc(screen.toUpperCase())+' · QUESTION '+esc(q.question_num)+'</strong></p><h3>'+esc(q.question)+'</h3>';
+   if(screen==="Today"||screen==="Catch Up")body+='<div class="answer-list">'+(q.responses||[]).map(v=>'<button class="sim-answer">'+esc(v)+'</button>').join("")+'</div><p class="muted">Correct/incorrect is hidden on this screen.</p>';
+   else body+='<div class="answer-result '+(status==="Correct"?"ok":status==="Incorrect"?"bad":"neutral")+'"><strong>'+esc(status)+'</strong><p>Correct answer: '+esc(q.correct_answer||"—")+'</p></div>';
+   body+='</div>';
+  }else body+='<div class="card"><p>No question data is available.</p></div>';
+  if(s.winner)body+='<div class="card fictitious"><strong>FICTITIOUS WINNER</strong><h2>'+esc((state.account||"test").toUpperCase())+'</h2><p>This exists only in the active test session.</p></div>';
+  if(s.showNotification){const n=s.notification||{title:"TEST NOTIFICATION",body:"This is a TEST PLATFORM preview."};body+='<div class="card notification-preview"><strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p></div>'}
+  shell("TEST PLAY",body);
+ }catch(e){shell("TEST PLAY",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}
+}
 async function winners(){shell("WINNER CONTROL",'<div class="card"><p>Loading…</p></div>');try{const x=await api("winners");const w=(x.weekly||[]).slice(0,8);shell("WINNER CONTROL",'<div class="card"><p>Fictitious winner in TEST PLAY: <strong>'+esc((state.account||"test").toUpperCase())+'</strong></p><button id="releaseWinner">RELEASE / REMOVE FICTITIOUS WINNER</button></div>'+w.map(v=>'<div class="card"><p>'+esc(v.player_name||v.winner_name||"Winner")+'</p><p class="muted">'+esc(v.week_start||"")+'</p></div>').join(""));document.getElementById("releaseWinner").onclick=()=>{state.simulation.winner=!state.simulation.winner;saveSim();winners()}}catch(e){shell("WINNER CONTROL",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
 async function systemCheck(){try{await api("session");shell("SYSTEM CHECK",'<div class="card"><p>Session authorization: PASS</p><p>Read-only production access: PASS</p><p>Simulation isolation: PASS</p></div>')}catch{shell("SYSTEM CHECK",'<div class="card"><p>Session authorization: FAIL</p></div>')}}
 
