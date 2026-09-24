@@ -1,4 +1,5 @@
-(()=>{\n/* BDL TEST PLATFORM — standalone; production is read-only. */
+(()=>{
+/* BDL TEST PLATFORM — standalone; production is read-only. */
 const PROD_URL="https://bdl-amy.github.io/Quiz-Me-This-BDL-Quiz-Me-That/";
 const API="https://ggmcjycwrnpahauhwyrs.supabase.co/functions/v1/test-results-service";
 const TEST_MENU=[["TEST PLAY","test-play"],["TEST MODE","test-mode"],["LIVE ANSWERS","live-answers"],["SYSTEM CHECK","system-check"],["QUESTIONS","questions"],["RESULTS","results"],["STATISTICS","statistics"],["HISTORY","history"],["WINNER CONTROL","winner-control"],["NOTIFICATIONS","notifications"]];
