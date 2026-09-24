@@ -1,7 +1,15 @@
-:root{--blue:#123c73;--gold:#d6aa35;--ink:#111;--paper:#f4f1e8;--panel:#fffaf0}
-*{box-sizing:border-box}body{margin:0;padding:16px;background:var(--blue);font-family:Arial,sans-serif;color:var(--ink)}
-main{max-width:680px;margin:auto;background:var(--paper);padding:22px;border-radius:20px;box-shadow:0 8px 30px #0004}
-h1,h2,p{text-align:center}.badge{display:inline-block;background:var(--gold);border:2px solid var(--ink);border-radius:999px;padding:7px 12px;font-weight:700}
-.menu{display:grid;gap:10px;margin-top:22px}button{width:100%;padding:17px;border:2px solid var(--blue);border-radius:12px;background:var(--blue);color:var(--gold);font-size:16px;font-weight:700;cursor:pointer}
-button.secondary{background:var(--gold);color:var(--blue)}button.end{margin-top:26px;background:#111;color:#fff;border-color:#111}
-.card{background:var(--panel);border:2px solid var(--gold);border-radius:16px;padding:16px;margin:14px 0}.muted{color:#555;font-size:14px}
+:root{--charcoal:#161a1d;--petrol:#006d77;--cyan:#22d3ee;--plum:#71305d;--plum-soft:#9a4f82;--text:#e5e7eb;--panel:#20262a;--panel-2:#273136}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:var(--charcoal);font-family:Arial,sans-serif;color:var(--text)}
+main{max-width:680px;margin:auto;background:var(--panel);padding:22px;border:1px solid #ffffff18;border-radius:20px;box-shadow:0 8px 30px #0008}
+h1,h2,p{text-align:center}
+h1,h2{color:var(--cyan)}
+.badge{display:inline-block;background:var(--plum);color:#fff;border:2px solid var(--cyan);border-radius:999px;padding:7px 12px;font-weight:700}
+.menu{display:grid;gap:10px;margin-top:22px}
+button{width:100%;padding:17px;border:2px solid var(--cyan);border-radius:12px;background:var(--petrol);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #0005}
+button:hover,button:focus{background:#00828d;outline:2px solid var(--cyan);outline-offset:2px}
+button.secondary{background:var(--plum);color:#fff;border-color:var(--plum-soft)}
+button.secondary:hover,button.secondary:focus{background:var(--plum-soft)}
+button.end{margin-top:26px;background:var(--charcoal);color:var(--cyan);border-color:var(--plum)}
+.card{background:var(--panel-2);border:2px solid var(--petrol);border-left:5px solid var(--plum);border-radius:16px;padding:16px;margin:14px 0}
+.muted{color:#b9c1c5;font-size:14px}
