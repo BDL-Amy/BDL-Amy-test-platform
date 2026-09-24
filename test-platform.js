@@ -26,22 +26,32 @@ function testMode(){
  document.getElementById("resetSim").onclick=()=>{state.simulation={};saveSim();testMode()};
 }
 async function testPlay(){
- shell("TEST PLAY",'<div class="card"><p>Loading simulation…</p></div>');
+ shell("TEST PLAY",'<div class="card"><p>Loading player experience…</p></div>');
  try{
   const x=await snapshot(),s=state.simulation||{},qs=x.questions||[];
   let q=s.question_num?qs.find(v=>Number(v.question_num)===Number(s.question_num)):null;
   if(!q)q=qs[0]||null;
   const screen=s.screen||"Today",status=s.status||"Not played";
-  let body='<div class="simulation-banner">SIMULATION · NO PRODUCTION DATA IS CHANGED</div>';
+  let body='<div class="simulation-banner">TEST PLAY · CONTROLLED PLAYER EXPERIENCE</div>';
+  body+='<div class="player-shell"><h2>QUIZ</h2><div class="player-tabs"><button class="'+(screen==="Today"?"active":"")+'">TODAY\'S QUESTION</button><button class="'+(screen==="Catch Up"?"active":"")+'">CATCH UP</button><button class="'+(screen==="Previous Question"?"active":"")+'">PREVIOUS QUESTION</button></div>';
   if(q){
-   body+='<div class="card"><p><strong>'+esc(screen.toUpperCase())+' · QUESTION '+esc(q.question_num)+'</strong></p><h3>'+esc(q.question)+'</h3>';
-   if(screen==="Today"||screen==="Catch Up")body+='<div class="answer-list">'+(q.responses||[]).map(v=>'<button class="sim-answer">'+esc(v)+'</button>').join("")+'</div><p class="muted">Correct/incorrect is hidden on this screen.</p>';
-   else body+='<div class="answer-result '+(status==="Correct"?"ok":status==="Incorrect"?"bad":"neutral")+'"><strong>'+esc(status)+'</strong><p>Correct answer: '+esc(q.correct_answer||"—")+'</p></div>';
-   body+='</div>';
-  }else body+='<div class="card"><p>No question data is available.</p></div>';
-  if(s.winner)body+='<div class="card fictitious"><strong>FICTITIOUS WINNER</strong><h2>'+esc((state.account||"test").toUpperCase())+'</h2><p>This exists only in the active test session.</p></div>';
-  if(s.showNotification){const n=s.notification||{title:"TEST NOTIFICATION",body:"This is a TEST PLATFORM preview."};body+='<div class="card notification-preview"><strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p></div>'}
+   body+='<section class="player-question"><div class="question-bar">QUESTION '+esc(q.question_num)+'</div><h3>'+esc(q.question)+'</h3>';
+   if(screen==="Previous Question"){
+    body+='<div class="answer-result '+(status==="Correct"?"ok":status==="Incorrect"?"bad":"neutral")+'"><strong>'+esc(status)+'</strong><p>Correct answer: '+esc(q.correct_answer||"—")+'</p></div>';
+   }else{
+    body+='<div class="answer-list">'+(q.responses||[]).map((v,i)=>'<button class="player-answer" data-i="'+i+'">'+esc(v)+'</button>').join("")+'</div><button id="testSubmit" class="submit-answer" disabled>SUBMIT ANSWER</button>';
+   }
+   body+='</section>';
+  }else body+='<div class="card"><p>No question available for this simulation.</p></div>';
+  if(s.winner)body+='<div class="player-popup"><strong>THE NEW SMARTEST</strong><h2>'+esc((state.account||"test").toUpperCase())+'</h2><button id="dismissWinner">CONFIRM</button></div>';
+  if(s.showNotification){const n=s.notification||{title:"TEST NOTIFICATION",body:"This is a TEST PLATFORM preview."};body+='<div class="player-popup notification-preview"><strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p><button id="dismissNotification">OK</button></div>'}
+  body+='</div>';
   shell("TEST PLAY",body);
+  let chosen=null;
+  app.querySelectorAll(".player-answer").forEach(btn=>btn.onclick=()=>{app.querySelectorAll(".player-answer").forEach(x=>x.classList.remove("selected"));btn.classList.add("selected");chosen=Number(btn.dataset.i);document.getElementById("testSubmit").disabled=false});
+  const submit=document.getElementById("testSubmit");if(submit)submit.onclick=()=>{state.simulation.testChosenAnswer=chosen;state.simulation.status=(q&&q.responses&&q.responses[chosen]===q.correct_answer)?"Correct":"Incorrect";saveSim();testPlay()};
+  document.getElementById("dismissWinner")?.addEventListener("click",()=>{state.simulation.winner=false;saveSim();testPlay()});
+  document.getElementById("dismissNotification")?.addEventListener("click",()=>{state.simulation.showNotification=false;saveSim();testPlay()});
  }catch(e){shell("TEST PLAY",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}
 }
 async function winners(){shell("WINNER CONTROL",'<div class="card"><p>Loading…</p></div>');try{const x=await api("winners");const w=(x.weekly||[]).slice(0,8);shell("WINNER CONTROL",'<div class="card"><p>Fictitious winner in TEST PLAY: <strong>'+esc((state.account||"test").toUpperCase())+'</strong></p><button id="releaseWinner">RELEASE / REMOVE FICTITIOUS WINNER</button></div>'+w.map(v=>'<div class="card"><p>'+esc(v.player_name||v.winner_name||"Winner")+'</p><p class="muted">'+esc(v.week_start||"")+'</p></div>').join(""));document.getElementById("releaseWinner").onclick=()=>{state.simulation.winner=!state.simulation.winner;saveSim();winners()}}catch(e){shell("WINNER CONTROL",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
