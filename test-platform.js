@@ -2,7 +2,8 @@
 /* BDL TEST PLATFORM — standalone; production is read-only. */
 const PROD_URL="https://bdl-amy.github.io/Quiz-Me-This-BDL-Quiz-Me-That/";
 const API="https://ggmcjycwrnpahauhwyrs.supabase.co/functions/v1/test-results-service";
-const TEST_MENU=[["TEST PLAY","test-play"],["TEST MODE","test-mode"],["LIVE ANSWERS","live-answers"],["SYSTEM CHECK","system-check"],["QUESTIONS","questions"],["RESULTS","results"],["STATISTICS","statistics"],["HISTORY","history"],["WINNER CONTROL","winner-control"],["NOTIFICATIONS","notifications"]];
+const RECOVERY_API="https://ggmcjycwrnpahauhwyrs.supabase.co/functions/v1/recovery-link-service";
+const TEST_MENU=[["TEST PLAY","test-play"],["TEST MODE","test-mode"],["LIVE ANSWERS","live-answers"],["SYSTEM CHECK","system-check"],["QUESTIONS","questions"],["RESULTS","results"],["STATISTICS","statistics"],["HISTORY","history"],["WINNER CONTROL","winner-control"],["NOTIFICATIONS","notifications"],["PLAYER RECOVERY","player-recovery"]];
 const app=document.getElementById("app");
 const state={session:true,simulation:JSON.parse(sessionStorage.getItem("bdlTestSimulation")||"{}"),account:null,expiresAt:null};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -88,6 +89,11 @@ function notifications(){
  shell("NOTIFICATIONS",'<div class="card"><label>Title</label><input id="nTitle" value="'+esc(n.title)+'"><label>Message</label><textarea id="nBody">'+esc(n.body)+'</textarea><button id="previewN">PREVIEW NOTIFICATION</button></div><div class="card notification-preview"><strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p></div>');
  document.getElementById("previewN").onclick=()=>{state.simulation.notification={title:document.getElementById("nTitle").value,body:document.getElementById("nBody").value};saveSim();notifications()};
 }
+
+async function recoveryApi(action,extra={}){const r=await fetch(RECOVERY_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,admin_session_token:token(),...extra})});const x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||"recovery_request_failed");return x}
+async function playerRecovery(){shell("PLAYER RECOVERY",'<div class="card"><p>Loading players…</p></div>');try{const x=await recoveryApi("list_players"),players=Array.isArray(x.players)?x.players:[];state.recoveryPlayers=players;const opts=players.map((p,i)=>'<option value="'+i+'">'+esc(p.player_name)+(p.recovery_enabled?" · CODE SET":" · NO CODE")+'</option>').join("");shell("PLAYER RECOVERY",'<div class="card"><p>Create a private, one-time recovery link. The link expires after 24 hours and can only be used once.</p><label>Player</label><select id="recoveryPlayer">'+opts+'</select><button id="createRecovery" '+(players.length?"":"disabled")+'>CREATE ONE-TIME RECOVERY LINK</button></div><div id="recoveryOutput"></div>');document.getElementById("createRecovery")?.addEventListener("click",createRecoveryLink)}catch(e){shell("PLAYER RECOVERY",'<div class="card"><p>Unavailable: '+esc(e.message)+'</p></div>')}}
+async function createRecoveryLink(){const sel=document.getElementById("recoveryPlayer"),p=state.recoveryPlayers?.[Number(sel?.value)];if(!p)return;const out=document.getElementById("recoveryOutput");out.innerHTML='<div class="card"><p>Creating link…</p></div>';try{const x=await recoveryApi("create_link",{player_name:p.player_name}),url=x.recovery_url||"";out.innerHTML='<div class="card"><p><strong>ONE-TIME RECOVERY LINK</strong></p><textarea id="recoveryUrl" readonly>'+esc(url)+'</textarea><button id="copyRecovery">COPY LINK</button><p class="muted">Expires after 24 hours · one use only.</p></div>';document.getElementById("copyRecovery").onclick=async()=>{try{await navigator.clipboard.writeText(url);document.getElementById("copyRecovery").textContent="COPIED"}catch{prompt("Copy recovery link:",url)}}}catch(e){out.innerHTML='<div class="card"><p>Could not create link: '+esc(e.message)+'</p></div>'}}
+
 function renderSection(id){
  if(id==="live-answers")return liveAnswers();
  if(id==="questions")return questions();
@@ -99,6 +105,7 @@ function renderSection(id){
  if(id==="statistics")return statistics();
  if(id==="history")return historyView();
  if(id==="notifications")return notifications();
+ if(id==="player-recovery")return playerRecovery();
  shell(TEST_MENU.find(x=>x[1]===id)?.[0]||id,'<div class="card"><p>Module unavailable.</p></div>');
 }
 function endSession(){sessionStorage.removeItem("bdlTestSession");sessionStorage.removeItem("bdlTestSimulation");if(typeof window.BDL_END_TEST_PLATFORM==="function"){window.BDL_END_TEST_PLATFORM();return}if(window.parent!==window){window.parent.postMessage({type:"BDL_TEST_PLATFORM_END"},"https://bdl-amy.github.io");return}location.href=PROD_URL}
